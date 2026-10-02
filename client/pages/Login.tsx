@@ -1,7 +1,18 @@
 import { FormEvent, useState } from "react";
-import { ArrowRight, Eye, EyeOff, LockKeyhole, ShieldCheck, Sparkles, UserRound } from "lucide-react";
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  ShieldCheck,
+  Sparkles,
+  UserRound,
+} from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
-type LoginProps = { onLogin: (token: string, email: string) => void };
+type LoginProps = {
+  onLogin: (token: string, email: string) => void;
+};
 
 export default function Login({ onLogin }: LoginProps) {
   const [email, setEmail] = useState("");
@@ -11,18 +22,294 @@ export default function Login({ onLogin }: LoginProps) {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!email.trim() || !email.includes("@") || password.length < 8) { setError("Use a valid email and a password with at least 8 characters."); return; }
+
+    if (
+      !email.trim() ||
+      !email.includes("@") ||
+      password.length < 8
+    ) {
+      setError(
+        "Use a valid email and a password with at least 8 characters.",
+      );
+      return;
+    }
+
     setError("");
+
     try {
-      let response = await fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email.trim(),password})});
-      if(response.status===404 || response.status===401){ response=await fetch("/api/auth/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email.trim(),password})}); }
-      const data=await response.json(); if(!response.ok) throw new Error(data.detail||"Authentication failed");
-      onLogin(data.token,email.trim());
-    } catch(cause){ setError(cause instanceof Error?cause.message:"Authentication failed"); }
+      // First try to log in existing user
+      let response = await apiFetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
+      });
+
+      // If user does not exist, try registration
+      if (response.status === 404 || response.status === 401) {
+        response = await apiFetch("/api/auth/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: email.trim(),
+            password,
+          }),
+        });
+      }
+
+      const contentType = response.headers.get("content-type") || "";
+
+      if (!contentType.includes("application/json")) {
+        throw new Error(
+          "Backend returned an invalid response. Please check the Render backend.",
+        );
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.detail ||
+            data.message ||
+            "Authentication failed",
+        );
+      }
+
+      if (!data.token) {
+        throw new Error(
+          "Authentication succeeded, but no login token was returned.",
+        );
+      }
+
+      onLogin(data.token, email.trim());
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Authentication failed",
+      );
+    }
   };
 
-  return <main className="relative flex min-h-screen overflow-hidden bg-[#101827] text-white"><div className="pointer-events-none absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-[#d8f76c]/[.07] blur-3xl" /><div className="pointer-events-none absolute bottom-[-220px] right-[-100px] h-[560px] w-[560px] rounded-full bg-[#9c8df0]/[.12] blur-3xl" />
-    <section className="relative hidden flex-1 flex-col justify-between p-12 lg:flex xl:p-16"><div className="flex items-center gap-3"><div className="relative flex h-10 w-10 items-center justify-center rounded-[13px] bg-[#d8f76c] text-[#101827]"><ShieldCheck className="h-5 w-5" strokeWidth={2.4} /><span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-[#101827] bg-[#65d8b1]" /></div><div><p className="font-display text-[17px] font-semibold tracking-[-.02em]">Veri<span className="text-[#d8f76c]">RAG</span></p><p className="mt-0.5 text-[10px] font-medium uppercase tracking-[.16em] text-white/40">Evidence intelligence</p></div></div><div className="max-w-[540px]"><p className="mb-5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.2em] text-[#d8f76c]"><Sparkles className="h-3.5 w-3.5" />Trust what you retrieve</p><h1 className="font-display text-5xl font-semibold leading-[1.05] tracking-[-.06em] xl:text-6xl">Answers that<br /><span className="text-white/35">show their work.</span></h1><p className="mt-7 max-w-[420px] text-sm leading-6 text-white/45">VeriRAG transforms your documents into an evidence layer with claim verification, temporal reasoning, and explainable trust.</p><div className="mt-10 flex flex-wrap gap-2">{["Claim-level verification", "Temporal resolution", "Evidence graph"].map((item) => <span key={item} className="rounded-full border border-white/10 bg-white/[.04] px-3 py-2 text-[10px] font-semibold text-white/60">{item}</span>)}</div></div><p className="text-[10px] text-white/30">Private workspace · Local-first intelligence</p></section>
-    <section className="relative flex w-full items-center justify-center bg-[#f5f7fb] px-6 py-10 text-[#182230] lg:max-w-[560px] lg:rounded-l-[36px] lg:px-16"><div className="w-full max-w-[360px]"><div className="mb-10 flex items-center gap-3 lg:hidden"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#101827] text-[#d8f76c]"><ShieldCheck className="h-5 w-5" /></div><p className="font-display text-lg font-semibold">Veri<span className="text-[#859d35]">RAG</span></p></div><div className="mb-8"><p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#8d99a8]">Research workspace</p><h2 className="mt-3 font-display text-3xl font-semibold tracking-[-.05em]">Welcome back<span className="text-[#b1c95a]">.</span></h2><p className="mt-2 text-sm text-[#7d8b9c]">Sign in to continue to your evidence layer.</p></div><form onSubmit={submit} className="space-y-5"><label className="block"><span className="mb-2 block text-[11px] font-semibold text-[#536176]">Work email</span><div className="relative"><UserRound className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a2adbb]" /><input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="email" className="h-12 w-full rounded-xl border border-[#dfe5ec] bg-white pl-11 pr-4 text-sm outline-none transition placeholder:text-[#b4beca] focus:border-[#b1c95a] focus:ring-4 focus:ring-[#d8f76c]/20" placeholder="you@company.com" /></div></label><label className="block"><span className="mb-2 block text-[11px] font-semibold text-[#536176]">Password</span><div className="relative"><LockKeyhole className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a2adbb]" /><input value={password} onChange={(event) => setPassword(event.target.value)} type={showPassword ? "text" : "password"} autoComplete="current-password" className="h-12 w-full rounded-xl border border-[#dfe5ec] bg-white pl-11 pr-11 text-sm outline-none transition placeholder:text-[#b4beca] focus:border-[#b1c95a] focus:ring-4 focus:ring-[#d8f76c]/20" placeholder="Enter your password" /><button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#a2adbb] hover:text-[#536176]" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div></label>{error && <p className="rounded-lg bg-[#fff0f0] px-3 py-2 text-[11px] font-medium text-[#c35f67]">{error}</p>}<button type="submit" className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#101827] text-xs font-bold text-white shadow-[0_8px_20px_rgba(16,24,39,.15)] transition hover:-translate-y-0.5 hover:bg-[#1b2a3f]">Sign in to VeriRAG <ArrowRight className="h-4 w-4 text-[#d8f76c]" /></button></form><div className="mt-8 flex items-center gap-3 text-[10px] text-[#a1adba]"><span className="h-px flex-1 bg-[#e2e7ed]" />Local workspace access<span className="h-px flex-1 bg-[#e2e7ed]" /></div><p className="mt-5 text-center text-[10px] leading-5 text-[#9aa6b5]">Your uploaded documents stay inside this workspace session.<br />Authentication is enforced by the VeriRAG backend for this workspace.</p></div></section>
-  </main>;
+  return (
+    <main className="relative flex min-h-screen overflow-hidden bg-[#101827] text-white">
+      {/* Background decorations */}
+      <div className="pointer-events-none absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-[#d8f76c]/[.07] blur-3xl" />
+
+      <div className="pointer-events-none absolute bottom-[-220px] right-[-100px] h-[560px] w-[560px] rounded-full bg-[#9c8df0]/[.12] blur-3xl" />
+
+      {/* Left section */}
+      <section className="relative hidden flex-1 flex-col justify-between p-12 lg:flex xl:p-16">
+        {/* Logo */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex h-10 w-10 items-center justify-center rounded-[13px] bg-[#d8f76c] text-[#101827]">
+            <ShieldCheck
+              className="h-5 w-5"
+              strokeWidth={2.4}
+            />
+
+            <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-[#101827] bg-[#65d8b1]" />
+          </div>
+
+          <div>
+            <p className="font-display text-[17px] font-semibold tracking-[-.02em]">
+              Veri<span className="text-[#d8f76c]">RAG</span>
+            </p>
+
+            <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[.16em] text-white/40">
+              Evidence intelligence
+            </p>
+          </div>
+        </div>
+
+        {/* Main message */}
+        <div className="max-w-[540px]">
+          <p className="mb-5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.2em] text-[#d8f76c]">
+            <Sparkles className="h-3.5 w-3.5" />
+
+            Trust what you retrieve
+          </p>
+
+          <h1 className="font-display text-5xl font-semibold leading-[1.05] tracking-[-.06em] xl:text-6xl">
+            Answers that
+            <br />
+            <span className="text-white/35">
+              show their work.
+            </span>
+          </h1>
+
+          <p className="mt-7 max-w-[420px] text-sm leading-6 text-white/45">
+            VeriRAG transforms your documents into an evidence
+            layer with claim verification, temporal reasoning,
+            and explainable trust.
+          </p>
+
+          <div className="mt-10 flex flex-wrap gap-2">
+            {[
+              "Claim-level verification",
+              "Temporal resolution",
+              "Evidence graph",
+            ].map((item) => (
+              <span
+                key={item}
+                className="rounded-full border border-white/10 bg-white/[.04] px-3 py-2 text-[10px] font-semibold text-white/60"
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <p className="text-[10px] text-white/30">
+          Private workspace · Local-first intelligence
+        </p>
+      </section>
+
+      {/* Right / Login section */}
+      <section className="relative flex w-full items-center justify-center bg-[#f5f7fb] px-6 py-10 text-[#182230] lg:max-w-[560px] lg:rounded-l-[36px] lg:px-16">
+        <div className="w-full max-w-[360px]">
+          {/* Mobile logo */}
+          <div className="mb-10 flex items-center gap-3 lg:hidden">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#101827] text-[#d8f76c]">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+
+            <p className="font-display text-lg font-semibold">
+              Veri<span className="text-[#859d35]">RAG</span>
+            </p>
+          </div>
+
+          {/* Heading */}
+          <div className="mb-8">
+            <p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#8d99a8]">
+              Research workspace
+            </p>
+
+            <h2 className="mt-3 font-display text-3xl font-semibold tracking-[-.05em]">
+              Welcome back
+              <span className="text-[#b1c95a]">.</span>
+            </h2>
+
+            <p className="mt-2 text-sm text-[#7d8b9c]">
+              Sign in to continue to your evidence layer.
+            </p>
+          </div>
+
+          {/* Login form */}
+          <form
+            onSubmit={submit}
+            className="space-y-5"
+          >
+            {/* Email */}
+            <label className="block">
+              <span className="mb-2 block text-[11px] font-semibold text-[#536176]">
+                Work email
+              </span>
+
+              <div className="relative">
+                <UserRound className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a2adbb]" />
+
+                <input
+                  value={email}
+                  onChange={(event) =>
+                    setEmail(event.target.value)
+                  }
+                  type="email"
+                  autoComplete="email"
+                  className="h-12 w-full rounded-xl border border-[#dfe5ec] bg-white pl-11 pr-4 text-sm outline-none transition placeholder:text-[#b4beca] focus:border-[#b1c95a] focus:ring-4 focus:ring-[#d8f76c]/20"
+                  placeholder="you@company.com"
+                />
+              </div>
+            </label>
+
+            {/* Password */}
+            <label className="block">
+              <span className="mb-2 block text-[11px] font-semibold text-[#536176]">
+                Password
+              </span>
+
+              <div className="relative">
+                <LockKeyhole className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a2adbb]" />
+
+                <input
+                  value={password}
+                  onChange={(event) =>
+                    setPassword(event.target.value)
+                  }
+                  type={
+                    showPassword ? "text" : "password"
+                  }
+                  autoComplete="current-password"
+                  className="h-12 w-full rounded-xl border border-[#dfe5ec] bg-white pl-11 pr-11 text-sm outline-none transition placeholder:text-[#b4beca] focus:border-[#b1c95a] focus:ring-4 focus:ring-[#d8f76c]/20"
+                  placeholder="Enter your password"
+                />
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPassword(
+                      (value) => !value,
+                    )
+                  }
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#a2adbb] hover:text-[#536176]"
+                  aria-label={
+                    showPassword
+                      ? "Hide password"
+                      : "Show password"
+                  }
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </label>
+
+            {/* Error */}
+            {error && (
+              <p className="rounded-lg bg-[#fff0f0] px-3 py-2 text-[11px] font-medium text-[#c35f67]">
+                {error}
+              </p>
+            )}
+
+            {/* Submit */}
+            <button
+              type="submit"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#101827] text-xs font-bold text-white shadow-[0_8px_20px_rgba(16,24,39,.15)] transition hover:-translate-y-0.5 hover:bg-[#1b2a3f]"
+            >
+              Sign in to VeriRAG
+
+              <ArrowRight className="h-4 w-4 text-[#d8f76c]" />
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="mt-8 flex items-center gap-3 text-[10px] text-[#a1adba]">
+            <span className="h-px flex-1 bg-[#e2e7ed]" />
+
+            Local workspace access
+
+            <span className="h-px flex-1 bg-[#e2e7ed]" />
+          </div>
+
+          {/* Footer */}
+          <p className="mt-5 text-center text-[10px] leading-5 text-[#9aa6b5]">
+            Your uploaded documents stay inside this
+            workspace session.
+            <br />
+            Authentication is enforced by the VeriRAG
+            backend for this workspace.
+          </p>
+        </div>
+      </section>
+    </main>
+  );
 }
