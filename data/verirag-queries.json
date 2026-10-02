@@ -1,0 +1,48 @@
+[
+  {
+    "id": "303737ad-9fa0-4984-8c0a-8be3b3bda8f2",
+    "question": "maternity leave policy",
+    "topic": "maternity leave policy",
+    "status": "INSUFFICIENT_EVIDENCE",
+    "coverage": 0,
+    "trust": 0,
+    "createdAt": "2026-09-10T09:49:13.769Z",
+    "response": {
+      "queryId": "303737ad-9fa0-4984-8c0a-8be3b3bda8f2",
+      "question": "maternity leave policy",
+      "intent": "GENERAL_KNOWLEDGE_LOOKUP",
+      "topic": "maternity leave policy",
+      "keywords": [
+        "maternity",
+        "leave",
+        "policy"
+      ],
+      "reformulations": [
+        "maternity leave policy",
+        "maternity leave policy policy requirements"
+      ],
+      "status": "INSUFFICIENT_EVIDENCE",
+      "answer": "Insufficient evidence found in the available enterprise documents.",
+      "coverage": 0,
+      "claims": [],
+      "evidence": [],
+      "missingInformation": [
+        "No relevant source text was found for this question."
+      ],
+      "trust": {
+        "score": 0,
+        "evidenceStrength": 0,
+        "sourceAuthority": 0,
+        "recency": 0,
+        "agreement": 0,
+        "explanation": "Trust is reduced because evidence coverage or source authority is limited."
+      },
+      "knowledgeGap": {
+        "detected": true,
+        "topic": "maternity leave policy",
+        "reason": "No relevant source text was found for this question."
+      },
+      "generatedAt": "2026-09-10T09:49:13.769Z"
+    }
+  }
+]

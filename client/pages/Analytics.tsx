@@ -1,0 +1,15 @@
+import { useEffect,useState } from "react";
+import { BarChart3,RefreshCw } from "lucide-react";
+import { apiFetch } from "@/lib/api";
+import { BarChart,Bar,XAxis,YAxis,Tooltip,ResponsiveContainer,LineChart,Line,CartesianGrid } from "recharts";
+export default function Analytics(){
+ const [data,setData]=useState<any>(null); const [error,setError]=useState("");
+ const load=()=>{setError("");apiFetch("/api/analytics").then(async r=>{if(!r.ok)throw new Error("Analytics unavailable");return r.json()}).then(setData).catch(e=>setError(e.message)).finally(()=>{});
+ }; useEffect(load,[]);
+ return <div className="animate-in fade-in duration-500"><div className="flex items-end justify-between"><div><p className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.15em] text-[#8491a3]"><BarChart3 className="h-3.5 w-3.5 text-[#b4a4ff]"/>Workspace telemetry</p><h1 className="font-display text-3xl font-semibold sm:text-[40px]">Analytics<span className="text-[#d6e887">.</span></h1><p className="mt-2 text-sm text-[#718096]">Charts are calculated from persisted queries, claims and documents.</p></div><button onClick={load} className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#dbe3eb] bg-white px-4 text-xs font-semibold"><RefreshCw className="h-3.5 w-3.5"/>Refresh</button></div>
+ {error&&<p className="mt-6 rounded-xl bg-[#fff5f5] p-4 text-xs text-[#b25c63]">{error}</p>}
+ {data&&<><div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">{[["Documents",data.documents],["Chunks",data.chunks],["Queries",data.queries],["Claims",data.claims],["Average trust",data.averageTrust]].map(([l,v])=><div key={String(l)} className="rounded-2xl border border-[#e3e8f0] bg-white p-5"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#94a0af]">{l}</p><p className="mt-4 font-display text-3xl font-semibold">{v}</p></div>)}</div>
+ <div className="mt-5 grid gap-5 xl:grid-cols-2"><section className="rounded-2xl border border-[#e3e8f0] bg-white p-6"><h2 className="font-display text-lg font-semibold">Claim verification</h2><div className="mt-5 h-[280px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={Object.entries(data.claimStatuses||{}).map(([status,value])=>({status,value}))}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="status"/><YAxis allowDecimals={false}/><Tooltip/><Bar dataKey="value"/></BarChart></ResponsiveContainer></div></section>
+ <section className="rounded-2xl border border-[#e3e8f0] bg-white p-6"><h2 className="font-display text-lg font-semibold">Query trust over time</h2><div className="mt-5 h-[280px]"><ResponsiveContainer width="100%" height="100%"><LineChart data={data.queryTimeline||[]}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="date"/><YAxis domain={[0,100]}/><Tooltip/><Line type="monotone" dataKey="trust"/></LineChart></ResponsiveContainer></div></section></div></>}
+ </div>
+}
